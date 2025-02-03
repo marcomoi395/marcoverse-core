@@ -10,6 +10,7 @@
     },
     "private": true,
     "dependencies": {
+        "@notionhq/client": "^2.2.15",
         "bcrypt": "^5.1.1",
         "compression": "^1.7.5",
         "dotenv": "^16.4.5",
