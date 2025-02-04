@@ -2,6 +2,7 @@
 
 const { Client } = require('@notionhq/client');
 const { BAD_REQUEST } = require('../core/responseHandler');
+const { json } = require('express');
 
 class NotionService {
     constructor() {
@@ -36,61 +37,100 @@ class NotionService {
         return `${String(utcDate.getDate()).padStart(2, '0')}/${String(utcDate.getMonth() + 1).padStart(2, '0')}/${utcDate.getFullYear()}`;
     }
 
-    static generateTodoMessage(jsonData) {
+    static generateTodoMessage(jsonData, timeOfDay) {
         // Lấy ngày từ task đầu tiên
         const firstTaskDate = new Date();
         const formattedDate = `${String(firstTaskDate.getDate()).padStart(2, '0')}/${String(firstTaskDate.getMonth() + 1).padStart(2, '0')}/${firstTaskDate.getFullYear()}`;
 
-        let message = `📌 TO-DO: ${formattedDate}\n\n`;
+        let message = '';
+        const timeBlocks = {
+            morning: {
+                icon: '🌅',
+                title: ' 6:00 Sáng - Bắt đầu ngày mới',
+                header: `Chào buổi sáng! Hôm nay là ${formattedDate}`,
+                priorityTitle: '🚨 CẦN ƯU TIÊN TRƯỚC',
+            },
+            afternoon: {
+                icon: '🌇',
+                title: ' 18:30 Chiều - Cân bằng công việc',
+                header: `Đã hoàn thành bao nhiêu % kế hoạch?`,
+                priorityTitle: '📌 FOCUS TỐI ƯU',
+            },
+            evening: {
+                icon: '🌃',
+                title: ' 21:30 Tối - Tổng kết & Thư giãn',
+                header: `Hãy review lại ngày làm việc`,
+                priorityTitle: '📌 VIỆC CHƯA XONG',
+            },
+        };
+        // Thêm vào message
+
+        const { icon, header, priorityTitle, tips, title } =
+            timeBlocks[timeOfDay];
+        message += `**${title}**\n`;
+        message += `*"${header}${timeOfDay === 'morning' ? ' - Cùng khởi động ngày mới!' : ''}"*\n\n`;
+        message += `**${priorityTitle}**\n`;
 
         jsonData.forEach((task, index) => {
             // Lấy thông tin task
             const taskName = task.properties.Name.title[0].plain_text || 'None';
             const priority =
                 task.properties['Priority Level']?.select.name || 'None';
-            const timeInfo = task.properties.Time.date;
+            const timeInfo = task.properties.Time?.date;
 
             // Xử lý thời gian
             let timeString = '';
-            const startTime = NotionService.formatUTCTime(timeInfo.start);
+            if (timeInfo) {
+                const startTime = NotionService.formatUTCTime(timeInfo.start);
 
-            if (startTime) {
-                timeString = `${startTime.hours}:${startTime.minutes}`;
-                if (
-                    new Date().toDateString() !==
-                    new Date(timeInfo.start).toDateString()
-                ) {
-                    timeString += ` ${NotionService.formatUTCDate(timeInfo.start)}`;
-                }
-
-                if (timeInfo.end) {
-                    const endTime = NotionService.formatUTCTime(timeInfo.end);
-                    if (endTime) {
-                        timeString += ` - ${endTime.hours}:${endTime.minutes}`;
-                    }
+                if (startTime) {
+                    timeString = `${startTime.hours}:${startTime.minutes}`;
                     if (
                         new Date().toDateString() !==
-                        new Date(timeInfo.end).toDateString()
+                        new Date(timeInfo.start).toDateString()
                     ) {
-                        timeString += ` ${NotionService.formatUTCDate(timeInfo.end)}`;
+                        timeString += ` ${NotionService.formatUTCDate(timeInfo.start)}`;
+                    }
+
+                    if (timeInfo.end) {
+                        const endTime = NotionService.formatUTCTime(
+                            timeInfo.end,
+                        );
+                        if (endTime) {
+                            timeString += ` - ${endTime.hours}:${endTime.minutes}`;
+                        }
+                        if (
+                            new Date().toDateString() !==
+                            new Date(timeInfo.end).toDateString()
+                        ) {
+                            timeString += ` ${NotionService.formatUTCDate(timeInfo.end)}`;
+                        }
                     }
                 }
             }
 
-            // Thêm vào message
-            message += `✧ ${taskName}\n`;
-            if (timeString) message += `   ➥ Time: ${timeString}\n`;
-            if (priority !== 'None') {
-                message += `   ➥ Priority:  ${priority}\n`;
-            }
+            message += `➥ ${taskName} ${priority !== 'None' ? `(*${priority}*)` : ''}`;
+            if (timeString) message += ` — ${timeString}\n`;
+            else message += '\n';
 
-            // Thêm khoảng cách giữa các task
-            if (index < jsonData.length - 1) {
-                message += '\n';
-            }
+            // // Thêm khoảng cách giữa các task
+            // if (index < jsonData.length - 1) {
+            //     message += '\n';
+            // }
         });
 
+        // Thêm footer động
+        // message += `\n${getFooterMessage(timeOfDay)}\n\n𝔂𝓸𝓾𝓷𝓰𝓶𝓪𝓻𝓬𝓸\n\n‎`;
         return message;
+
+        function getFooterMessage(time) {
+            const footers = {
+                morning: '💪 Khởi đầu ngày mới thật hiệu quả!',
+                afternoon: '🍵 Nghỉ ngơi một chút rồi tiếp tục nhé!',
+                evening: '✨ Ngủ ngon và mơ những giấc mơ đẹp!',
+            };
+            return `*${footers[time]}*`;
+        }
     }
 
     static isTodayInRange(start, end) {
@@ -112,7 +152,7 @@ class NotionService {
         return tomorrow >= startDay && tomorrow <= endDay;
     }
 
-    async getTasks(time, databaseArray = []) {
+    async getTasks(time, databaseArray = [], timeOfDay) {
         /*
             "0000": Daily Schedule
             "0001": Daily Log
@@ -171,10 +211,7 @@ class NotionService {
             tasks.push(...tasksSelect);
         }
 
-        console.log('Tasks::', tasks);
-        console.log(tasks.length);
-
-        return tasks;
+        return NotionService.generateTodoMessage(tasks, timeOfDay);
     }
 }
 
