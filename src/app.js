@@ -17,7 +17,7 @@ const sendWebhook = async (taskIds, timeOfDay) => {
             message: tasks,
         };
 
-        return await axios.post('http://localhost:3500/webhook', data);
+        return await axios.post(process.env.WEBHOOK_URL, data);
     } catch (error) {
         console.error('Lỗi khi gửi webhook:', error.message);
     }
@@ -26,7 +26,7 @@ const sendWebhook = async (taskIds, timeOfDay) => {
 // Init route
 app.get('/', async (req, res) => {
     const data = await sendWebhook(['0000', '0001', '0002'], 'morning');
-    res.send("Okay");
+    res.send('Okay');
 });
 
 // Cron jobs
