@@ -120,7 +120,7 @@ class NotionService {
         });
 
         // Thêm footer động
-        // message += `\n${getFooterMessage(timeOfDay)}\n\n𝔂𝓸𝓾𝓷𝓰𝓶𝓪𝓻𝓬𝓸\n\n‎`;
+        message += `\n${getFooterMessage(timeOfDay)}\n\n𝔂𝓸𝓾𝓷𝓰𝓶𝓪𝓻𝓬𝓸\n\n‎`;
         return message;
 
         function getFooterMessage(time) {

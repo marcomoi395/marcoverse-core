@@ -10,7 +10,6 @@ app.use(express.urlencoded({ extended: true }));
 
 const sendWebhook = async (taskIds, timeOfDay) => {
     try {
-        console.log('Đang gửi webhook đến bot...');
         const tasks = await notionService.getTasks('today', taskIds, timeOfDay);
         const data = {
             type: ['discord', 'telegram'],
@@ -25,14 +24,51 @@ const sendWebhook = async (taskIds, timeOfDay) => {
 
 // Init route
 app.get('/', async (req, res) => {
-    const data = await sendWebhook(['0000', '0001', '0002'], 'morning');
-    res.send('Okay');
+    await sendWebhook(['0000', '0001'], 'morning');
+    res.send('Successfull send webhook');
 });
 
 // Cron jobs
-cron.schedule('0 6 * * *', () => sendWebhook(['0000', '0002'], 'morning'));
-cron.schedule('30 18 * * *', () => sendWebhook(['0000', '0001'], 'afternoon'));
-cron.schedule('0 21 * * *', () => sendWebhook(['0000', '0001'], 'evening'));
+cron.schedule(
+    '0 6 * * *',
+    () => {
+        console.log(
+            "It's 6:00 AM, sending morning webhook...",
+            new Date().toLocaleString(),
+        );
+        sendWebhook(['0000', '0002'], 'morning');
+    },
+    {
+        timezone: 'Asia/Ho_Chi_Minh',
+    },
+);
+
+cron.schedule(
+    '30 18 * * *',
+    () => {
+        console.log(
+            "It's 6:30 PM, sending evening webhook...",
+            new Date().toLocaleString(),
+        );
+        sendWebhook(['0000', '0001'], 'afternoon');
+    },
+    {
+        timezone: 'Asia/Ho_Chi_Minh',
+    },
+);
+cron.schedule(
+    '0 21 * * *',
+    () => {
+        console.log(
+            "It's 9:00 PM, sending evening webhook...",
+            new Date().toLocaleString(),
+        );
+        sendWebhook(['0000', '0001'], 'evening');
+    },
+    {
+        timezone: 'Asia/Ho_Chi_Minh',
+    },
+);
 
 // Handling 404 Error
 app.use((req, res, next) => {
