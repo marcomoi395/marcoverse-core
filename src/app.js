@@ -24,7 +24,7 @@ const sendWebhook = async (taskIds, timeOfDay) => {
 
 // Init route
 app.get('/', async (req, res) => {
-    await sendWebhook(['0000', '0001'], 'morning');
+    await sendWebhook(['0000', '0002'], 'morning');
     res.send('Successfull send webhook');
 });
 
@@ -34,36 +34,11 @@ cron.schedule(
     () => {
         console.log(
             "It's 6:00 AM, sending morning webhook...",
-            new Date().toLocaleString(),
+            new Date().toLocaleString('vi-VN', {
+                timezone: 'Asia/Ho_Chi_Minh',
+            }),
         );
         sendWebhook(['0000', '0002'], 'morning');
-    },
-    {
-        timezone: 'Asia/Ho_Chi_Minh',
-    },
-);
-
-cron.schedule(
-    '30 18 * * *',
-    () => {
-        console.log(
-            "It's 6:30 PM, sending evening webhook...",
-            new Date().toLocaleString(),
-        );
-        sendWebhook(['0000', '0001'], 'afternoon');
-    },
-    {
-        timezone: 'Asia/Ho_Chi_Minh',
-    },
-);
-cron.schedule(
-    '0 21 * * *',
-    () => {
-        console.log(
-            "It's 9:00 PM, sending evening webhook...",
-            new Date().toLocaleString(),
-        );
-        sendWebhook(['0000', '0001'], 'evening');
     },
     {
         timezone: 'Asia/Ho_Chi_Minh',
