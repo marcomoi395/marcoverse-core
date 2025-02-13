@@ -30,10 +30,14 @@ const sendWebhook = async (taskIds, timeOfDay) => {
 };
 
 // Init route
-// app.get('/', async (req, res) => {
-//     await sendWebhook(['0000', '0002'], 'morning');
-//     res.send('Successfull send webhook');
-// });
+app.get('/', async (req, res) => {
+    const result = await notionService.getTasks(
+        'today',
+        ['0000', '0002'],
+        'morning',
+    );
+    res.send(result);
+});
 
 const checkPaymentConditions = (payment, conditions) => {
     const contentRegex = new RegExp(conditions.content_regex);

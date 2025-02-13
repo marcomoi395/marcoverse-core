@@ -3,6 +3,7 @@
 const { Client } = require('@notionhq/client');
 const { BAD_REQUEST } = require('../core/responseHandler');
 const { json } = require('express');
+const moment = require('moment-timezone');
 
 class NotionService {
     constructor() {
@@ -134,10 +135,14 @@ class NotionService {
     }
 
     static isTodayInRange(start, end) {
-        const startDay = new Date(start).setHours(0, 0, 0, 0);
-        const endDay = end ? new Date(end).setHours(0, 0, 0, 0) : startDay;
-        const today = new Date().setHours(0, 0, 0, 0);
-
+        const startDay = moment
+            .tz(start, 'Asia/Ho_Chi_Minh')
+            .startOf('day')
+            .toDate();
+        const endDay = end
+            ? moment.tz(end, 'Asia/Ho_Chi_Minh').startOf('day').toDate()
+            : startDay;
+        const today = moment().tz('Asia/Ho_Chi_Minh').startOf('day').toDate();
         return today >= startDay && today <= endDay;
     }
 
