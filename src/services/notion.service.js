@@ -4,6 +4,7 @@ const { Client } = require('@notionhq/client');
 const { BAD_REQUEST } = require('../core/responseHandler');
 const { json } = require('express');
 const moment = require('moment-timezone');
+const formattedDataBeforeSetDataForNotion = require('../helper/formattedDataBeforeSetDataForNotion.js');
 
 class NotionService {
     constructor() {
@@ -11,6 +12,7 @@ class NotionService {
         this.upcommingPlansId = '18b8dbf4be7280b1ac32dfefbc5bb180';
         this.dailyLogId = '18b8dbf4be72801dbcc7c3c83131eabf';
         this.dailyScheduleId = '18b8dbf4be7280c3a502c5846890ca04';
+        this.budgetTracker = '6195237b1b22427dbd4c6e27b584f314';
     }
 
     async getData(databaseId, filter = {}, sorts = []) {
@@ -21,6 +23,23 @@ class NotionService {
             filter,
             sorts,
         });
+    }
+
+    async setData(formattedData) {
+        // Check exist data
+        const response = await this.getData(this.budgetTracker, {
+            property: 'Transaction ID',
+            title: {
+                equals: formattedData.properties['Transaction ID'].rich_text[0]
+                    .plain_text,
+            },
+        });
+
+        if (response.results.length > 0) {
+            return;
+        }
+
+        return await this.notion.pages.create(formattedData);
     }
 
     static formatUTCTime(utcTime) {
@@ -217,6 +236,12 @@ class NotionService {
         }
 
         return NotionService.generateTodoMessage(tasks, timeOfDay);
+    }
+
+    async setDataForBudgetTracker(body) {
+        return await this.setData(
+            formattedDataBeforeSetDataForNotion(this.budgetTracker, body),
+        );
     }
 }
 
