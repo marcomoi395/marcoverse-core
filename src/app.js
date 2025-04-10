@@ -2,33 +2,11 @@ const express = require('express');
 const app = express();
 require('dotenv').config();
 const notionService = require('./services/notion.service');
-const { BAD_REQUEST } = require('./core/responseHandler.js');
 const cron = require('node-cron');
 const axios = require('axios');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-const sendWebhook = async (taskIds, timeOfDay) => {
-    console.log(
-        'sending webhook::',
-        new Date().toLocaleString('vi-VN', {
-            timezone: 'Asia/Ho_Chi_Minh',
-        }),
-    );
-
-    try {
-        const tasks = await notionService.getTasks('today', taskIds, timeOfDay);
-        const data = {
-            type: ['discord', 'telegram'],
-            message: tasks,
-        };
-
-        return await axios.post(process.env.WEBHOOK_URL, data);
-    } catch (error) {
-        console.error('Lỗi khi gửi webhook:', error.message);
-    }
-};
 
 const requestWebhook = async () => {
     try {
@@ -46,16 +24,6 @@ const requestWebhook = async () => {
         console.error('Error accessing gateway:', error);
     }
 };
-
-// Init route
-// app.get('/', async (req, res) => {
-//     await requestWebhook();
-//
-//     return {
-//         code: 200,
-//         message: 'ok',
-//     };
-// });
 
 const verifyToken = (req, res, next) => {
     const { token } = req.body;
@@ -87,22 +55,6 @@ app.post('/webhook', verifyToken, async (req, res) => {
 });
 
 // Cron jobs
-cron.schedule(
-    '0 6 * * *',
-    () => {
-        console.log(
-            "It's 6:00 AM, sending morning webhook...",
-            new Date().toLocaleString('vi-VN', {
-                timezone: 'Asia/Ho_Chi_Minh',
-            }),
-        );
-        sendWebhook(['0000', '0002'], 'morning');
-    },
-    {
-        timezone: 'Asia/Ho_Chi_Minh',
-    },
-);
-
 cron.schedule(
     '0 20 * * *',
     async () => {
