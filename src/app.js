@@ -3,7 +3,6 @@ const app = express();
 require('dotenv').config();
 const notionService = require('./services/notion.service');
 const cron = require('node-cron');
-const axios = require('axios');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
